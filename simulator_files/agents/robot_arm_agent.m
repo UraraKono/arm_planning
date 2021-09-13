@@ -670,10 +670,12 @@ classdef robot_arm_agent < multi_link_agent
         end
         
         %% forward kinematics
-        function [R,T,J] = get_link_rotations_and_translations(A,time_or_config)
+        function [R,T,J] = get_link_rotations_and_translations(A,time_or_config,varargin)
             % [R,T] = A.get_link_rotations_and_translations(time)
             % [R,T] = A.get_link_rotations_and_translations(configuration)
             % [R,T,J] = A.get_link_rotations_and_translations(t_or_q)
+            % [R,T,J] = A.get_link_rotations_and_translations(time,'time')
+            % [R,T,J] = A.get_link_rotations_and_translations(q,'configuration')
             %
             % Compute the rotation and translation of all links in the
             % global (baselink) frame at the given time. If no time is
@@ -686,28 +688,68 @@ classdef robot_arm_agent < multi_link_agent
                 time_or_config = 0 ;
             end
             
-            % get joint data
-            if size(time_or_config,1) == 1
-                t = time_or_config ;
-                if t > A.time(end)
-                    t = A.time(end) ;
-                    warning(['Invalid time entered! Using agent''s final ',...
-                        'time t = ',num2str(t),' instead.'])
+            if isempty(varargin)
+                if size(time_or_config,1) == 1
+                    if A.n_links_and_joints == 1
+                        warning(['Cannot distinguish between time and configuration ',...
+                            'for a 1-D robot! Default assumes time is input. If you need '...
+                            'a configuration, please use the following method:',newline,newline,...
+                            '   A.get_link_rotations_and_translations_from_configuration',...
+                            newline,newline,'The best solution is to define a 2DOF robot with a ',...
+                            'virtual (i.e., dummy) first link.'])
+                    end
+                    data_type = 'time' ;
+                else
+                    data_type = 'configuration' ;
                 end
-                
-                % interpolate the state for the corresponding time
-                z = match_trajectories(t,A.time,A.state) ;
-                j_vals = z(1:2:end) ; % joint values
             else
-                % assume a configuration was put in
-                q = time_or_config ;
-                
-                if length(q) == A.n_states
-                    q = q(1:2:end) ;
-                elseif length(q) ~= A.n_states/2
-                    error('Please provide either a time or a joint configuration.')
-                end
-                j_vals = q ;
+                data_type = varargin{1} ;
+            end
+            
+            % figure out what data type was passed in
+            switch data_type
+                case 'time'
+                    t = time_or_config ;
+                    if t > A.time(end)
+                        t = A.time(end) ;
+                        warning(['Invalid time entered! Using agent''s final ',...
+                            'time t = ',num2str(t),' instead.'])
+                    elseif t < A.time(1)
+                        t = A.time(1) ;
+                        warning(['Invalid time entered! Using agent''s initial ',...
+                            'time t = ',num2str(t),' instead.'])
+                    end
+                    
+                    % interpolate the state for the corresponding time
+                    z = match_trajectories(t,A.time,A.state) ;
+                    j_vals = z(A.joint_state_indices) ; % joint values
+                    
+                case 'configuration'
+                    q = time_or_config ;
+                    
+                    if length(q) == A.n_states
+                        q = q(1:2:end) ;
+                    elseif length(q) ~= A.n_states/2
+                        error('Please provide either a time or a joint configuration.')
+                    end
+                    j_vals = q ;
+            end
+            
+            % get joint data
+            [R,T,J] = get_link_rotations_and_translations_from_configuration(A,j_vals) ;
+        end
+        
+        function [R,T,J] = get_link_rotations_and_translations_from_configuration(A,q)
+            % [R,T] = A.get_link_rotations_and_translations_from_configuration(q)
+            %
+            % Compute the rotation and translation of all links in the
+            % global (baselink) frame at the given configuration.
+            %
+            % The optional third output is the joint locations in 2- or 3-D
+            % space, which is also output by A.get_joint_locations(q).
+            
+            if nargin < 2
+                q = zeros(A.n_links_and_joints) ;
             end
             
             j_locs = A.joint_locations ; % joint locations
@@ -742,7 +784,7 @@ classdef robot_arm_agent < multi_link_agent
                 end
                 
                 % get the value and location of the current joint
-                j_idx = j_vals(idx) ;
+                j_idx = q(idx) ;
                 j_loc = j_locs(:,idx) ;
                 
                 % compute link rotation
