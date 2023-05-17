@@ -2,8 +2,10 @@
 This repo contains the code for our recent paper: https://arxiv.org/abs/2002.01591
 
 ## Setup Requirements
-To run this code, you'll need MATLAB R2018b or newer.
-Also, you will need [CORA_2018](https://tumcps.github.io/CORA/).
+To run this code, you'll need:
+- MATLAB R2018b or newer.
+- [CORA_2018](https://tumcps.github.io/CORA/) (download and add to your MATLAB path)
+- [RTD](https://github.com/skvaskov/RTD) (download and add to your MATLAB path)
 
 If you want to run the GPU versions of the code, you'll need IPOPT... more detailed instructions for setting up the GPU versions of the code to follow.
 
