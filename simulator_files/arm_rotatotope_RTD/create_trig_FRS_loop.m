@@ -31,6 +31,7 @@ end
 save('FRS_trig/0key.mat', 'c_IC');
 
 for i = 1:length(c_IC) % we're going to loop over all velocity intervals
+    % 0~t_plan : k_v + k_a * t (trig_dyn_toPeak)
     options.tStart = 0;
     options.tFinal = t_plan;
     
@@ -47,7 +48,7 @@ for i = 1:length(c_IC) % we're going to loop over all velocity intervals
     options.verbose = 1;
     
     options.uTrans = 0;
-    options.U = zonotope([0, 0]);
+    options.U = zonotope([0, 0]); %uncertain input set
     
     options.advancedLinErrorComp = 0;
     options.tensorOrder = 1;

@@ -75,6 +75,8 @@ classdef robot_arm_FRS_rotatotope_fetch
             end
             
             obj = obj.create_FRS();
+            % try plotting the FRS
+%             obj.plot();
             
             % generate k vertices for each link
             for i = 1:obj.n_links
